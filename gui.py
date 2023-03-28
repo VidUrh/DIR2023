@@ -15,7 +15,9 @@ btn1.place(x=50, y=50)
 
 '''
 stanja:
-    
+    1
+    2
+    3
 '''
 #trenutnoStanje = "pobiranje kartona"
 trenutnoStanje = "skeniranje QR kode"
