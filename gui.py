@@ -6,6 +6,7 @@ def start_GUI():
     win = tk.Tk()
     win.title("Pakiranje števcev")
     win.geometry("900x600+10+20")
+
     canvas = tk.Canvas(win, width=900, height=600)
     canvas.pack()
 
@@ -34,7 +35,10 @@ def start_GUI():
     stanje2 = tk.Label(win, text=trenutnoStanje, font=("Arial", 15), fg="gray")
     stanje2.place(relx=0.13, rely=0.2)
 
-    if (trenutnoStanje == "skeniranje QR kode" or trenutnoStanje == "vstavljanje števca v ovitek"):
+    if (trenutnoStanje == "skeniranje QR kode"):
+        QRkoda = tk.Label(win, text="QR koda: ", font=("Arial", 15), fg="gray")
+        QRkoda.place(relx=0.5, rely=0.2)
+    elif (trenutnoStanje == "vstavljanje števca v ovitek"):
         code = "300 323 002"
         QRkoda = tk.Label(win, text="QR koda: "+code, font=("Arial", 15), fg="gray")
         QRkoda.place(relx=0.5, rely=0.2)
