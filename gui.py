@@ -91,6 +91,7 @@ class GUI:
         p2.place(x=295, y=370)
         p3.place(x=445, y=370)
         
+    
         
         
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
