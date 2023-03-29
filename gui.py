@@ -6,6 +6,7 @@ def start_GUI():
     win = tk.Tk()
     win.title("Pakiranje števcev")
     win.geometry("900x600+10+20")
+
     canvas = tk.Canvas(win, width=900, height=600)
     canvas.pack()
 
@@ -34,7 +35,10 @@ def start_GUI():
     stanje2 = tk.Label(win, text=trenutnoStanje, font=("Arial", 15), fg="gray")
     stanje2.place(relx=0.13, rely=0.2)
 
-    if (trenutnoStanje == "skeniranje QR kode" or trenutnoStanje == "vstavljanje števca v ovitek"):
+    if (trenutnoStanje == "skeniranje QR kode"):
+        QRkoda = tk.Label(win, text="QR koda: ", font=("Arial", 15), fg="gray")
+        QRkoda.place(relx=0.5, rely=0.2)
+    elif (trenutnoStanje == "vstavljanje števca v ovitek"):
         code = "300 323 002"
         QRkoda = tk.Label(win, text="QR koda: "+code, font=("Arial", 15), fg="gray")
         QRkoda.place(relx=0.5, rely=0.2)
@@ -43,20 +47,27 @@ def start_GUI():
     paletizacija.place(relx=0.05, rely=0.3)
 
     def izbiraPal():
-        print(pal)
-
-    pi1 = ImageTk.PhotoImage(Image.open("p1.png"))
-    pi1l = tk.Label(win, image=pi1)
-    pi1l.place(x=100, y=220)
-    pi2 = ImageTk.PhotoImage(Image.open("p2.png"))
-    pi2l = tk.Label(win, image=pi2)
-    pi2l.place(x=250, y=220)
-    pi3 = ImageTk.PhotoImage(Image.open("p3.png"))
-    pi3l = tk.Label(win, image=pi3)
-    pi3l.place(x=400, y=220)
+        print(pal.get())
+    
+    def pal1():
+        pal.set(1)
+    def pal2():
+        pal.set(2)
+    def pal3():
+        pal.set(3)
 
     pal = tk.IntVar()
     pal.set(0)
+    pi1 = ImageTk.PhotoImage(Image.open("p1.png"))
+    pi1b = tk.Button(win, image=pi1, command=pal1)
+    pi1b.place(x=100, y=220)
+    pi2 = ImageTk.PhotoImage(Image.open("p2.png"))
+    pi2b = tk.Button(win, image=pi2, command=pal2)
+    pi2b.place(x=250, y=220)
+    pi3 = ImageTk.PhotoImage(Image.open("p3.png"))
+    pi3b = tk.Button(win, image=pi3, command=pal3)
+    pi3b.place(x=400, y=220)
+
     p1 = tk.Radiobutton(win, text="1", variable=pal, value=1, command=izbiraPal)
     p2 = tk.Radiobutton(win, text="2", variable=pal, value=2, command=izbiraPal)
     p3 = tk.Radiobutton(win, text="3", variable=pal, value=3, command=izbiraPal)
