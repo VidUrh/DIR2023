@@ -15,6 +15,7 @@ class GUI:
         self.HEADER = 64
         self.PORT = 5050
         # Use reuseaddress
+        self.QRcode = "300 323 002"
 
         self.SERVER = socket.gethostbyname(socket.gethostname())
         ADDR = ('', self.PORT)
@@ -56,13 +57,7 @@ class GUI:
         self.stanje = tk.Label(self.win, text=trenutnoStanje, font=("Arial", 15), fg="gray")
         self.stanje.place(relx=0.13, rely=0.2)
 
-        if (trenutnoStanje == "skeniranje QR kode"):
-            QRkoda = tk.Label(self.win, text="QR koda: ", font=("Arial", 15), fg="gray")
-            QRkoda.place(relx=0.5, rely=0.2)
-        elif (trenutnoStanje == "vstavljanje števca v ovitek"):
-            code = "300 323 002"
-            QRkoda = tk.Label(self.win, text="QR koda: "+code, font=("Arial", 15), fg="gray")
-            QRkoda.place(relx=0.5, rely=0.2)
+        self.update_GUI(trenutnoStanje)
 
         paletizacija = tk.Label(self.win, text="paletizacija:", font=("Arial", 15))
         paletizacija.place(relx=0.05, rely=0.3)
@@ -110,6 +105,14 @@ class GUI:
     
     def update_GUI(self, stanje):
         self.stanje.config(text=stanje)
+        if (stanje == "skeniranje QR kode"):
+            self.QRkoda = tk.Label(self.win, text="QR koda: ", font=("Arial", 15), fg="gray")
+            self.QRkoda.place(relx=0.5, rely=0.2)
+        elif (stanje == "vstavljanje števca v ovitek"):
+            self.QRkoda = tk.Label(self.win, text="QR koda: "+self.QRcode, font=("Arial", 15), fg="gray")
+            self.QRkoda.place(relx=0.5, rely=0.2)
+        else:
+            self.QRkoda.place_forget()   
 
     def handle_client(self, conn, addr):
         print("[NEW CONNECTION] {} connected.".format(addr))
