@@ -18,8 +18,8 @@ def send(msg):
     send_length += b' ' * (HEADER - len(send_length))
     client.send(send_length)
     client.send(message)
+    # Read the response from the server, if any
+    print(client.recv(HEADER).decode(FORMAT))
 
-send("test")
-input("Wait for input ...")
-send("vstavljanje števca v ovitek")
-input("endProgram")
+while 1:
+    send(input("Wait for input ..."))
