@@ -21,20 +21,26 @@ class GUI:
         self.PORT = 5050
         # Use reuseaddress
         self.QRcode = "300 323 002"
+        self.mayIStart = False
 
         self.SERVER = socket.gethostbyname(socket.gethostname())
         ADDR = ('', self.PORT)
         self.FORMAT = 'utf-8'
         
+        self.root = tk.Tk()
+        self.root.title("Pakiranje števcev")
+        self.root.geometry("900x630")
         
-        self.win = tk.Tk()
-        self.win.title("Pakiranje števcev")
-        self.win.geometry("900x600+10+20")
+        bgImage = ImageTk.PhotoImage(Image.open("background.jpg"))
+        self.win = tk.Label(self.root, image = bgImage)
+        self.win.place(x = 0, y = 0)
 
-        btn1 = tk.Button(self.win, text="START", font=("Arial", 12, "bold"), bg="yellow")
+        
+        btn1 = tk.Button(self.win, text="START", font=("Arial", 12, "bold"), bg="green", command = lambda : self.switch_state(1))
         btn1.place(x=50, y=50)
-        #btn2 = tk.Button(self.win, text="STOP", font=("Arial", 12, "bold"), bg="red")
-        #btn2.place(x=120, y=50)
+        
+        btn2 = tk.Button(self.win, text="STOP", font=("Arial", 12, "bold"), bg="red", command = lambda : self.switch_state(0))
+        btn2.place(x=150, y=50)
         
         
         self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
@@ -61,40 +67,47 @@ class GUI:
         stanje1.place(relx=0.05, rely=0.2)
         self.stanje = tk.Label(self.win, text=trenutnoStanje, font=("Arial", 15), fg="gray")
         self.stanje.place(relx=0.13, rely=0.2)
+        
+        self.switch = tk.Label(self.win, bg="green", width=4, height=2)
+        self.switch.place(x=750, y=50)
 
         self.update_GUI(trenutnoStanje)
+        
+        self.updateSwitch()
 
         paletizacija = tk.Label(self.win, text="paletizacija:", font=("Arial", 15))
         paletizacija.place(relx=0.05, rely=0.3)
 
         def izbiraPal():
-            print(pal.get())
+            print(self.pal.get())
         
         def pal1():
-            pal.set(1)
+            self.pal.set(1)
         def pal2():
-            pal.set(2)
+            self.pal.set(2)
         def pal3():
-            pal.set(3)
+            self.pal.set(3)
 
-        pal = tk.IntVar()
-        pal.set(0)
+        
+        
+        self.pal = tk.IntVar(value=1)
+        self.pal.set(0)
         pi1 = ImageTk.PhotoImage(Image.open("p1.png"))
         pi1b = tk.Button(self.win, image=pi1, command=pal1)
-        pi1b.place(x=100, y=220)
+        pi1b.place(x=200, y=220)
         pi2 = ImageTk.PhotoImage(Image.open("p2.png"))
         pi2b = tk.Button(self.win, image=pi2, command=pal2)
-        pi2b.place(x=250, y=220)
+        pi2b.place(x=350, y=220)
         pi3 = ImageTk.PhotoImage(Image.open("p3.png"))
         pi3b = tk.Button(self.win, image=pi3, command=pal3)
-        pi3b.place(x=400, y=220)
+        pi3b.place(x=500, y=220)
 
-        p1 = tk.Radiobutton(self.win, text="1", variable=pal, value=1, command=izbiraPal)
-        p2 = tk.Radiobutton(self.win, text="2", variable=pal, value=2, command=izbiraPal)
-        p3 = tk.Radiobutton(self.win, text="3", variable=pal, value=3, command=izbiraPal)
-        p1.place(x=145, y=370)
-        p2.place(x=295, y=370)
-        p3.place(x=445, y=370)
+        p1 = tk.Radiobutton(self.win, text="1", variable=self.pal, value=1, command=izbiraPal)
+        p2 = tk.Radiobutton(self.win, text="2", variable=self.pal, value=2, command=izbiraPal)
+        p3 = tk.Radiobutton(self.win, text="3", variable=self.pal, value=3, command=izbiraPal)
+        p1.place(x=245, y=370)
+        p2.place(x=395, y=370)
+        p3.place(x=545, y=370)
         
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         
@@ -115,7 +128,18 @@ class GUI:
         thread = threading.Thread(target=self.start,daemon=True)
         thread.start()
         
-        self.win.mainloop()
+        self.root.mainloop()
+    
+    def switch_state(self, state):
+        self.mayIStart = bool(state == 1)
+        self.updateSwitch()
+    
+    def updateSwitch(self):
+        if self.mayIStart:
+            self.switch.config(bg="green")
+        else:
+            self.switch.config(bg="red")
+    
     def resize_frame(self, frame):
         return cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
     
@@ -165,11 +189,50 @@ class GUI:
                     conn.send(f"(-1)\n".encode(self.FORMAT))
                 else:
                     x, y, orient = skatlaPOS
-                    conn.send(f"({x}, {y}, {orient})\n".encode(self.FORMAT))                
+                    conn.send(f"({x}, {y}, {orient})\n".encode(self.FORMAT))        
+            elif msg == "mayIStart":
+                conn.send(f"({self.mayIStart})\n".encode(self.FORMAT))  
+            
+            elif msg == "IsSkatlaOK":
+                conn.send(f"({self.getSkatlaOk()})\n".encode(self.FORMAT))
+                
+            elif msg == "whichPal":
+                conn.send(f"({self.pal.get()})\n".encode(self.FORMAT))
+            
             else:
                 self.update_GUI(msg)
+                conn.send("Msg received".encode(self.FORMAT))
         
         conn.close()
+    def getSkatlaOk(self):
+        """Function for checking if the skatla is correctly erected
+        """
+        #ret, frame = self.cap.read()
+        ret, frame = True, cv2.imread("skatlaNotOk.jpg")
+        frame = self.calibrateImage(frame)
+        frame = self.resize_frame(frame)
+        
+        minRGB = np.array([17, 41, 64])
+        maxRGB = np.array([96, 141, 160])
+        
+        # Detect square stevec in frame
+        if not ret:
+            return "NO CAMERA"
+        
+        #frame = cv2.blur(frame, (7, 7))
+        
+        maskS = cv2.inRange(frame, minRGB, maxRGB)
+        
+        kernel = np.ones((3,3), np.uint8)
+        maskS = cv2.erode(maskS, kernel, iterations=5)
+        maskS = cv2.dilate(maskS, kernel, iterations=2)
+        
+        roi = maskS[400:, 750:]
+
+        if roi[70,70] == 255:
+            return 1
+        else:
+            return 0
         
     def start(self):
         print("[STARTING] server is starting...")
@@ -184,7 +247,6 @@ class GUI:
     def getQRCodeValue(self):
         _, frame = self.cap.read()
         
-        cv2.imshow("frame", frame)
         detect = cv2.QRCodeDetector()
         value, points, straight_qrcode = detect.detectAndDecode(frame)
 
@@ -198,11 +260,10 @@ class GUI:
 
     def calibrateImage(self, frame):
         return cv2.undistort(frame, self.newcameramtx, self.dist, None, self.newcameramtx)
-        
 
     def getStevecPos(self):
         ret, frame = self.cap.read()
-        ret, frame = True, cv2.imread("stevecIzPozKamZERO.jpg")
+        # ret, frame = True, cv2.imread("stevecIzPozKamZERO.jpg")
         frame = self.calibrateImage(frame)
         frame = self.resize_frame(frame)
         frame = self.crop_frame(frame)
@@ -274,8 +335,6 @@ class GUI:
         cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
         cv2.putText(frame, str(orientation), (int(rectCx), int(rectCy)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-        cv2.imshow("Image", frame)
-        
         x, y, orient = self.transformToFeatureSpace(rectCx, rectCy, -orientation)
         return x, y, orient
     
@@ -297,14 +356,12 @@ class GUI:
         
         if frame is not None:
             cv2.circle(frame, (int(origin[0]), int(origin[1])), 5, (0, 255, 255), -1)
-            cv2.imshow("origin", frame)
-            cv2.waitKey(0)
         
         return rotatedX, rotatedY, orient - originRotation
         
     def getSkatlaPos(self):
-        #ret, frame = self.cap.read()
-        ret, frame = True, cv2.imread("SkatlaLoc.jpg")
+        ret, frame = self.cap.read()
+        #ret, frame = True, cv2.imread("SkatlaLoc.jpg")
         frame = self.calibrateImage(frame)
         frame = self.resize_frame(frame)
         
@@ -327,7 +384,6 @@ class GUI:
         hsv = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
         
         maskS = cv2.inRange(hsv, minHsvS, maxHsvS)
-        cv2.imshow("Mask", maskS)
         
         kernel = np.ones((3,3), np.uint8)
         maskS = cv2.erode(maskS, kernel, iterations=5)
@@ -379,7 +435,6 @@ class GUI:
         cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
         cv2.putText(frame, str(-orientation), (int(rectCx), int(rectCy)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-        cv2.imshow("Image", frame)
         cv2.imwrite("skatla.jpg", frame)
         x, y, orient = self.transformToFeatureSpace(rectCx, rectCy, -orientation, frame)
         return x, y, orient
