@@ -45,13 +45,13 @@ def start_GUI():
     def izbiraPal():
         print(pal)
 
-    pi1 = ImageTk.PhotoImage(Image.open("DIR2023/p1.png"))
+    pi1 = ImageTk.PhotoImage(Image.open("p1.png"))
     pi1l = tk.Label(win, image=pi1)
     pi1l.place(x=100, y=220)
-    pi2 = ImageTk.PhotoImage(Image.open("DIR2023/p2.png"))
+    pi2 = ImageTk.PhotoImage(Image.open("p2.png"))
     pi2l = tk.Label(win, image=pi2)
     pi2l.place(x=250, y=220)
-    pi3 = ImageTk.PhotoImage(Image.open("DIR2023/p3.png"))
+    pi3 = ImageTk.PhotoImage(Image.open("p3.png"))
     pi3l = tk.Label(win, image=pi3)
     pi3l.place(x=400, y=220)
 
