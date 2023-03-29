@@ -10,6 +10,9 @@ import cv2
 import numpy as np
 import math
 import datetime
+import pickle
+import time
+import json
 
 class GUI:
     def __init__(self):
@@ -98,10 +101,26 @@ class GUI:
         self.server.bind(ADDR)   
         # Start the server thread
         
+        
+        with open("calibration.pkl", 'rb') as calibrationFile:
+            data = pickle.load(calibrationFile)
+            cameraMatrix = data['cameraMatrix']
+            dist = data['dist']
+            self.dist = dist
+            self.newcameramtx, self.roi = cv2.getOptimalNewCameraMatrix(
+                cameraMatrix, dist, (960, 540), 1, (960, 540))
+        
+        
+        
         thread = threading.Thread(target=self.start,daemon=True)
         thread.start()
         
         self.win.mainloop()
+    def resize_frame(self, frame):
+        return cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+    
+    def crop_frame(self, frame):
+        return frame[50:500, 150:800]
     
     def update_GUI(self, stanje):
         self.stanje.config(text=stanje)
@@ -132,6 +151,7 @@ class GUI:
                     conn.send(f"(-1)\n".encode(self.FORMAT))
             elif msg == "GetStevecPos":
                 stevecPos = self.getStevecPos()
+                print(stevecPos)
                 if stevecPos is None:
                     conn.send(f"(-1)\n".encode(self.FORMAT))
                 else:
@@ -140,13 +160,12 @@ class GUI:
                     
             elif msg == "GetSkatlaPos":
                 skatlaPOS = self.getSkatlaPos()
+                print(skatlaPOS)
                 if skatlaPOS is None:
                     conn.send(f"(-1)\n".encode(self.FORMAT))
                 else:
                     x, y, orient = skatlaPOS
-                    conn.send(f"({x}, {y}, {orient})\n".encode(self.FORMAT))
-                    
-                
+                    conn.send(f"({x}, {y}, {orient})\n".encode(self.FORMAT))                
             else:
                 self.update_GUI(msg)
         
@@ -166,7 +185,6 @@ class GUI:
         _, frame = self.cap.read()
         
         cv2.imshow("frame", frame)
-        cv2.waitKey(0)
         detect = cv2.QRCodeDetector()
         value, points, straight_qrcode = detect.detectAndDecode(frame)
 
@@ -178,10 +196,16 @@ class GUI:
             #300 323 003
         return None
 
+    def calibrateImage(self, frame):
+        return cv2.undistort(frame, self.newcameramtx, self.dist, None, self.newcameramtx)
+        
 
     def getStevecPos(self):
         ret, frame = self.cap.read()
-        #ret, frame = True, cv2.imread("stevecIzPozKam2.jpg")
+        ret, frame = True, cv2.imread("stevecIzPozKamZERO.jpg")
+        frame = self.calibrateImage(frame)
+        frame = self.resize_frame(frame)
+        frame = self.crop_frame(frame)
         
         minHsvS = np.array([0, 0, 165])
         maxHsvS = np.array([360, 255, 250])
@@ -190,11 +214,8 @@ class GUI:
         if not ret:
             return "NO CAMERA"
         
-        #frame = frame[200:1300, 400:1500]
-        frame = frame[50:400, 50:600]
         
         
-        #frame = cv2.resize(frame, (640, 480))
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame = cv2.equalizeHist(frame)
         frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
@@ -204,7 +225,6 @@ class GUI:
         hsv = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
         
         maskS = cv2.inRange(hsv, minHsvS, maxHsvS)
-        cv2.imshow("Mask", maskS)
         
         kernel = np.ones((3,3), np.uint8)
         maskS = cv2.erode(maskS, kernel, iterations=5)
@@ -255,25 +275,49 @@ class GUI:
         cv2.putText(frame, str(orientation), (int(rectCx), int(rectCy)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         cv2.imshow("Image", frame)
-        cv2.waitKey(0)
-        return rectCx, rectCy, orientation
-    
-    def getSkatlaPos(self):
-        ret, frame = self.cap.read()
-        #ret, frame = True, cv2.imread("skatla.jpg")
         
-        minHsvS = np.array([0, 0, 150])
+        x, y, orient = self.transformToFeatureSpace(rectCx, rectCy, -orientation)
+        return x, y, orient
+    
+    def transformToFeatureSpace(self, x, y, orient, frame = None):
+        with open("originPoints.json", "r") as file:
+            originPoints = json.load(file)
+            origin = originPoints["origin"]
+            coordX = originPoints["x"]
+            pixelToMm = originPoints["pixelToMm"]
+            originRotation = originPoints["originRotation"]
+        if frame is not None:
+            cv2.circle(frame, (int(x), int(y)), 5, (255, 0, 0), -1)
+        x = (x - origin[0]) * pixelToMm
+        y = (y - origin[1]) * pixelToMm
+        
+        # Rotate coordinates from camera frame to origin frame
+        rotatedX = x * math.cos(originRotation) - y * math.sin(originRotation)
+        rotatedY = x * math.sin(originRotation) + y * math.cos(originRotation)
+        
+        if frame is not None:
+            cv2.circle(frame, (int(origin[0]), int(origin[1])), 5, (0, 255, 255), -1)
+            cv2.imshow("origin", frame)
+            cv2.waitKey(0)
+        
+        return rotatedX, rotatedY, orient - originRotation
+        
+    def getSkatlaPos(self):
+        #ret, frame = self.cap.read()
+        ret, frame = True, cv2.imread("SkatlaLoc.jpg")
+        frame = self.calibrateImage(frame)
+        frame = self.resize_frame(frame)
+        
+        minHsvS = np.array([0, 0, 120])
         maxHsvS = np.array([360, 255, 250])
 
         # Detect square stevec in frame
         if not ret:
             return "NO CAMERA"
         
-        #frame = frame[200:1300, 400:1500]
-        frame = frame[50:400, 50:600]
+        frame = self.crop_frame(frame)
         
         
-        #frame = cv2.resize(frame, (640, 480))
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame = cv2.equalizeHist(frame)
         frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
@@ -333,12 +377,12 @@ class GUI:
         
         # Draw rotated rectangle
         cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
-        cv2.putText(frame, str(orientation), (int(rectCx), int(rectCy)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+        cv2.putText(frame, str(-orientation), (int(rectCx), int(rectCy)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         cv2.imshow("Image", frame)
         cv2.imwrite("skatla.jpg", frame)
-        cv2.waitKey(0)
-        return rectCx, rectCy, orientation
+        x, y, orient = self.transformToFeatureSpace(rectCx, rectCy, -orientation, frame)
+        return x, y, orient
 
 if __name__ == "__main__":
     GUI()
