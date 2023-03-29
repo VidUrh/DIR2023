@@ -40,20 +40,13 @@ if __name__ == '__main__':
 
     
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind(ADDR)
-
-
-    root=Tk()
-    root.geometry("1000x750")
     
+    server.bind(ADDR)   
     # Start the server thread
     
     thread = threading.Thread(target=start)
     thread.start()
     
     # Start the GUI thread
-    GUIthread = threading.Thread(target=start_GUI)
-    GUIthread.start()
+    start_GUI()
     
