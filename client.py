@@ -20,5 +20,6 @@ def send(msg):
     client.send(message)
 
 send("test")
-input("enter ""stanje1"" or ""stanje2"": ")
-send("stanje2")
+input("Wait for input ...")
+send("vstavljanje števca v ovitek")
+input("endProgram")

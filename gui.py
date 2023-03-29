@@ -7,7 +7,8 @@ from PIL import ImageTk, Image
 import socket 
 import threading
 import cv2
-
+import numpy as np
+import math
 
 class GUI:
     def __init__(self):
@@ -92,7 +93,7 @@ class GUI:
         p3.place(x=445, y=370)
         
     
-        
+        self.getStevecPos()
         
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         
@@ -147,7 +148,105 @@ class GUI:
             #300 323 001
             #300 323 002
             #300 323 003
+        return None
 
+    def getQRCodePos(self):
+        _, frame = self.cap.read()
+        #ret, frame = True, cv2.imread("stevecIzPozKam2.jpg")
+        frame = frame[200:1300, 400:1500]
+        
+               
+        detect = cv2.QRCodeDetector()
+        value, points, straight_qrcode = detect.detectAndDecode(frame)
+
+        # Draw rectangle around QR code on the frame
+        if (points is not None):
+            return cv2.minAreaRect(points)[0]
+            #300 323 001
+            #300 323 002
+            #300 323 003
+        return None
+
+    def getStevecPos(self):
+        ret, frame = self.cap.read()
+        #ret, frame = True, cv2.imread("stevecIzPozKam2.jpg")
+        frame = frame[200:1300, 400:1500]
+        
+        
+        minHsvS = np.array([0, 0, 165])
+        maxHsvS = np.array([360, 255, 250])
+
+        # Detect square stevec in frame
+        if not ret:
+            return "NO CAMERA"
+        
+        #frame = cv2.resize(frame, (640, 480))
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame = cv2.equalizeHist(frame)
+        frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
+        frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+        
+        cv2.blur(frame, (7, 7))
+        hsv = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
+        cv2.imshow("HSV", hsv)
+        maskS = cv2.inRange(hsv, minHsvS, maxHsvS)
+        cv2.imshow("Mask", maskS)
+        cv2.erode(maskS, None, iterations=2)
+        cv2.dilate(maskS, None, iterations=2)
+        contours, hierarchy = cv2.findContours(maskS, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.waitKey(0)
+        if (contours is not None and len(contours) > 0):
+            minContourSize = 40000
+            maxContourSize = 1000000
+            for i in contours:
+                area = cv2.contourArea(i)
+                if area > minContourSize and area < maxContourSize :
+                    minContourSize = cv2.contourArea(i)
+                    maxContour = i
+                
+        (x, y, w, h) = cv2.boundingRect(maxContour)
+        
+        x0 = int(x+w/2)
+        y0 = int(y+h/2)
+        r = int(h/2)
+        if maskS[y0][x0] != 0:
+            cv2.rectangle(frame, (x,y),(x+w,y+h), (255, 255, 255), 2)
+        
+        rotatedRect = cv2.minAreaRect(maxContour)
+        box = cv2.boxPoints(rotatedRect)
+        box = np.intp(box)
+
+        # orientation is stored in the last element of the tuple returned by minAreaRect
+        orientation = rotatedRect[-1]
+        # Round orientation to 2 decimal places
+        orientation = round(orientation, 2)
+
+        # get width and height from rotated rectangle (first element is width, second is height)
+        width, height = rotatedRect[-2]
+        # Get orientation of the nozzle (if width is smaller than height, the nozzle is rotated 90 degrees)
+        if width > height:
+            orientation = orientation - 90
+
+        rectCx, rectCy = rotatedRect[0] # Center of the rectangle
+        QRPos = self.getQRCodePos() # Center of the QR code
+        if QRPos is not None:
+            qrCx, qrCy = QRPos # Center of the QR code    
+            
+        cv2.circle(frame, (int(qrCx), int(qrCy)), 5, (255, 255, 255), -1)  
+        cv2.circle(frame, (int(rectCx), int(rectCy)), 5, (255, 255, 255), -1)  
+        # Get the 360 degree angle of the rectangle (the center of the rectangle is the origin) and the qr code should be in the second quadrant (it isn't because it is rotated)
+        if qrCx > rectCx:
+            orientation = 180 + orientation
+        
+        
+        
+        # Draw rotated rectangle
+        cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
+        cv2.putText(frame, str(orientation), (int(rectCx), int(rectCy)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+        cv2.imshow("Image", frame)
+        cv2.waitKey(0)
+        return rectCx, rectCy, orientation
 
 
 if __name__ == "__main__":
