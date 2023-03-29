@@ -7,12 +7,25 @@ import _thread
 from gui import *
 
 
+HEADER = 64
+PORT = 5050
+# Use reuseaddress
 
+SERVER = socket.gethostbyname(socket.gethostname())
+ADDR = ('', PORT)
+FORMAT = 'utf-8'
 
 
 
 def handle_client(conn, addr):
-
+    connected = True
+    while connected:
+        msg = conn.recv(HEADER).decode(FORMAT)        
+        if msg == "test":
+            print("tst")
+        if msg.startswith("stanje"):
+            print(msg[6:])
+            
     conn.close()
 
 
@@ -29,14 +42,7 @@ def start():
 
 
 if __name__ == '__main__':
-    HEADER = 64
-    PORT = 5050
-    # Use reuseaddress
-    
-    SERVER = socket.gethostbyname(socket.gethostname())
-    ADDR = ('', PORT)
-    FORMAT = 'utf-8'
-    DISCONNECT_MESSAGE = "!DISCONNECT"
+
 
     
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -44,7 +50,7 @@ if __name__ == '__main__':
     server.bind(ADDR)   
     # Start the server thread
     
-    thread = threading.Thread(target=start)
+    thread = threading.Thread(target=start,daemon=True)
     thread.start()
     
     # Start the GUI thread
