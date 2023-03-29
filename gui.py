@@ -6,6 +6,8 @@ from tkinter import simpledialog
 from PIL import ImageTk, Image
 import socket 
 import threading
+import cv2
+
 
 class GUI:
     def __init__(self):
@@ -27,6 +29,12 @@ class GUI:
         btn1.place(x=50, y=50)
         #btn2 = tk.Button(self.win, text="STOP", font=("Arial", 12, "bold"), bg="red")
         #btn2.place(x=120, y=50)
+        
+        
+        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+        self.cap.set(5, 60)
+
+        print(self.cap.get(5)) 
 
         '''
         stanja:
@@ -101,7 +109,7 @@ class GUI:
         self.win.mainloop()
     
     def update_GUI(self, stanje):
-        print(stanje)
+        self.stanje.config(text=stanje)
 
     def handle_client(self, conn, addr):
         print("[NEW CONNECTION] {} connected.".format(addr))
@@ -110,7 +118,7 @@ class GUI:
             msg = conn.recv(self.HEADER).decode(self.FORMAT)        
             if msg.startswith("stanje"):
                 print(msg[6:])
-                
+            self.update_GUI(msg)
         conn.close()
         
     def start(self):
@@ -122,6 +130,19 @@ class GUI:
             thread = threading.Thread(target=self.handle_client, args=(conn, addr))
             thread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+            
+    def getQRCodeValue(self):
+        _, frame = self.cap.read()
+               
+        detect = cv2.QRCodeDetector()
+        value, points, straight_qrcode = detect.detectAndDecode(frame)
+
+        # Draw rectangle around QR code on the frame
+        if (points is not None):
+            return value
+            #300 323 001
+            #300 323 002
+            #300 323 003
 
 
 

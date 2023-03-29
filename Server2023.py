@@ -15,9 +15,10 @@ SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = ('', PORT)
 FORMAT = 'utf-8'
 
-
+GUIObj = None
 
 def handle_client(conn, addr):
+    global GUIObj
     connected = True
     while connected:
         msg = conn.recv(HEADER).decode(FORMAT)        
@@ -25,6 +26,7 @@ def handle_client(conn, addr):
             print("tst")
         if msg.startswith("stanje"):
             print(msg[6:])
+            GUIObj.update_GUI(msg[6:])
             
     conn.close()
 
@@ -37,7 +39,7 @@ def start():
         conn, addr = server.accept()
         thread = threading.Thread(target=handle_client, args=(conn, addr))
         thread.start()
-        print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+        print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
 
 
 
@@ -54,5 +56,5 @@ if __name__ == '__main__':
     thread.start()
     
     # Start the GUI thread
-    start_GUI()
+    GUIObj = GUI() 
     

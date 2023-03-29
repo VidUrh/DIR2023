@@ -4,7 +4,7 @@ HEADER = 64
 PORT = 5050
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
-SERVER = "192.168.64.50"
+SERVER = "193.2.176.250"
 
 ADDR = (SERVER, PORT)
 
@@ -18,7 +18,7 @@ def send(msg):
     send_length += b' ' * (HEADER - len(send_length))
     client.send(send_length)
     client.send(message)
-    print(client.recv(2048).decode(FORMAT))
 
 send("test")
-
+input("enter ""stanje1"" or ""stanje2"": ")
+send("stanje2")
