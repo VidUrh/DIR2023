@@ -61,7 +61,9 @@ def detectCheckerBoard(image, grayImage, criteria, boardDimension):
 
 import pickle
 
-ret, frame = True, cv2.imread("sahovnica.jpg")
+#ret, frame = True, cv2.imread("sahovnica.jpg")
+cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+
 with open("calibration.pkl", 'rb') as calibrationFile:
     data = pickle.load(calibrationFile)
     cameraMatrix = data['cameraMatrix']
@@ -69,9 +71,10 @@ with open("calibration.pkl", 'rb') as calibrationFile:
     newcameramtx, roi = cv2.getOptimalNewCameraMatrix(
         cameraMatrix, distV, (960, 540), 1, (960, 540))
     
+ret, frame = cap.read()
 frame = cv2.undistort(frame, newcameramtx, distV, None, newcameramtx)
-frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-frame = frame[50:500, 150:800]
+frame= cv2.resize(frame, (0, 0), fx=0.9, fy=0.9)
+frame = frame[20:380, 50:580]
 
 CRITERIA = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
