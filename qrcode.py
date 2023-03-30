@@ -1,6 +1,7 @@
 import cv2
 import time
 import numpy as np
+import numpy as np
 
 def QRcode():
     cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
@@ -9,11 +10,13 @@ def QRcode():
     print(cap.get(5))
     
     while (cv2.waitKey(1) != 27):
-        __, frame = cap.read()
+        #_, frame = cap.read() #cv2.imread("stevecIzPozKam.jpg", cv2.IMREAD_COLOR)
+        frame = cv2.imread("stevecIzPozKam.jpg", cv2.IMREAD_COLOR)
         
         detect = cv2.QRCodeDetector()
         value, points, straight_qrcode = detect.detectAndDecode(frame)
 
+        # Draw rectangle around QR code on the frame
         if (points is not None):
             print(value)
             #300 323 001
@@ -23,7 +26,7 @@ def QRcode():
         cv2.imshow("Image", frame)
     
         k = cv2.waitKey(1) & 0xff
-        if k == 27:
+        if k == 27 or k== ord('q'):
             break
 
 if __name__ == "__main__":
